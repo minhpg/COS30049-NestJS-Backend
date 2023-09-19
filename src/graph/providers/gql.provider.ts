@@ -11,19 +11,26 @@ export const gqlProviderFactory = async () => {
   );
 
   // Define GraphQL schema and provide db driver
+  try {
     const neoSchema = new Neo4jGraphQL({
       typeDefs,
       driver,
     });
-
+  
     const schema = await neoSchema.getSchema();
     await neoSchema.assertIndexesAndConstraints({
       options: { create: true },
     });
-
-  return {
-    debug: true,
-    playground: true,
-    schema
-  };
+  
+    return {
+      debug: true,
+      playground: true,
+      introspection: true,
+      schema
+    };
+  }
+  catch(e){
+    console.log(e)
+    throw e
+  }
 };

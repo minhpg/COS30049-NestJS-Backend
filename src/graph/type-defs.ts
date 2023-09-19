@@ -1,7 +1,6 @@
 import { gql } from 'apollo-server-express';
 
 export const typeDefs = gql`
-
   enum AddressType {
     eoa
     contract
@@ -11,14 +10,14 @@ export const typeDefs = gql`
     address: String!
     type: AddressType
 
-    bought: [Transaction!]! @relationship(type: "SELL", direction: OUT)
-    sold: [Transaction!]! @relationship(type: "BUY", direction: OUT)
+    bought: [Transaction!]! @relationship(type: "BUY", direction: OUT)
+    sold: [Transaction!]! @relationship(type: "SELL", direction: OUT)
   }
 
   type Transaction {
     block_hash: String!
     block_number: Int!
-    block_timestamp: Int!
+    block_timestamp: DateTime!
     gas: Int!
     gas_price: Int!
     gas_used: Int!
@@ -32,4 +31,27 @@ export const typeDefs = gql`
     to_address: Address! @relationship(type: "BUY", direction: IN)
   }
 
+  type YearlyVolumeStat {
+    year: Int!
+    transactionsCount: Int!
+    totalValue: Int!
+  }
+
+  type Query {
+    getYearlyVolume: [YearlyVolumeStat]
+      @cypher(
+        statement: """
+        MATCH (transaction:Transaction)
+        WITH transaction.block_timestamp.year as year, count(*) as transactionsCount, sum(transaction.value) as totalValue
+        RETURN
+        {
+            year: year,
+            transactionsCount: transactionsCount,
+            totalValue: totalValue
+        } as result
+        """
+        columnName: "result"
+      )
+
+  }
 `;

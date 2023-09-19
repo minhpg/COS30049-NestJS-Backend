@@ -23,11 +23,10 @@ class Setup:
     def initDatabase(self):
         # create_query = f'CREATE DATABASE {NEO4J_DB} IF NOT EXISTS'
         # results = self.driver.execute_query(create_query, database_=NEO4J_DB)
-        queries = ['CREATE CONSTRAINT IF NOT EXISTS FOR (a:Address) REQUIRE a.address IS UNIQUE', 
+        queries = ['MATCH (n) DETACH DELETE n','CREATE CONSTRAINT IF NOT EXISTS FOR (a:Address) REQUIRE a.address IS UNIQUE', 
                  'CREATE CONSTRAINT IF NOT EXISTS FOR (t:Transaction) REQUIRE t.hash IS UNIQUE']
         for query in queries:
             results = self.driver.execute_query(query, database_=NEO4J_DB)
-            print(results)
 
     def createRelationships(self):
         df = pandas.read_csv(RELS_DATA)
@@ -37,14 +36,17 @@ class Setup:
             to_address = row.pop('to_address')
             for k,v in row.items():
                 if(isinstance(v, str)):
-                    # if(not v.isnumeric()):
-                    v = f'"{v}"'
+                    if(not v.isnumeric()):
+                        v = f'"{v}"'
+                    else:
+                        v = v[:8]
+                if k == "block_timestamp":
+                    v = f'datetime({{epochSeconds: {v}}})'
                 fields.append(f"{k}: {v}")
             fields_str = ", ".join(fields)
             query = f'MATCH (to:Address), (from:Address) WHERE to.address = "{to_address}" AND from.address = "{from_address}" CREATE (t:Transaction{{{ fields_str }}}), (from)-[:BUY]->(t), (to)-[:SELL]->(t)'
             try:
                 results = self.driver.execute_query(query, database_=NEO4J_DB)
-                print(results)
             except Exception as e:
                 print(e)
 
@@ -55,7 +57,6 @@ class Setup:
             query.append(f'MERGE (:Address{{address: "{row.get("addressId")}", type:"{row.get("type")}"}})')
         query = list(dict.fromkeys(query))
         results = self.driver.execute_query( '\n'.join(query), database_=NEO4J_DB)
-        print(results)
 
     def run(self):
         self.initDatabase()

@@ -23,7 +23,7 @@ import { TypeORMConfigService } from './configs/typeorm.config';
     GraphModule,
     UserModule,
     AuthModule,
-    MediaUploadModule,
+    // MediaUploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
